@@ -9,6 +9,7 @@ using System.Text;
 using System.Security.Cryptography;
 using System.Threading.Tasks;
 using Microsoft.IdentityModel.Clients.ActiveDirectory;
+using System.IO;
 
 namespace KeyVaultPlugin
 {
@@ -25,46 +26,11 @@ namespace KeyVaultPlugin
 			AssertNull(context, "context");
 			AssertNull(organizationServiceFactory, "organizationServiceFactory");
 
-			var organizationService = organizationServiceFactory.CreateOrganizationService(context.UserId);
+            // just create some dummy files and save on disk
+            string logsFolder = Environment.ExpandEnvironmentVariables(@"%HOME%\LogFiles");
+            Guid randomFileName = Guid.NewGuid();
 
-            AssertNull(organizationService, "organizationService");
-
-            QueryExpression query = new QueryExpression("account");
-            query.ColumnSet.AllColumns = true;
-
-            // call to CRM Web service
-            var accounts = organizationService.RetrieveMultiple(query);
-
-            AssertNull(accounts, "accounts");
-            AssertNull(accounts.Entities, "accounts.Entities");
-
-            // get the pfx file from KeyVault
-            var kv = new KeyVaultClient(new KeyVaultClient.AuthenticationCallback(GetToken));
-            var key = kv.GetSecretAsync(@"https://sudhakarkeyvault.vault.azure.net:443/secrets/TestPfxFile/d375341c177b4e34ac4c6eb020f87f45").Result;
-
-            NetworkCredential creds = new NetworkCredential("", key.Value);
-            byte[] data = Convert.FromBase64String(creds.Password);
-            X509Certificate2 cert = new X509Certificate2(data, "reset123", X509KeyStorageFlags.MachineKeySet |
-                                     X509KeyStorageFlags.PersistKeySet |
-                                     X509KeyStorageFlags.Exportable);
-
-            //Encrypting the text using the public key            
-            string encyrptedString = string.Empty;
-            byte[] bytesData = Encoding.UTF8.GetBytes("Sample Text Input");
-            byte[] bytesEncrypted = null;
-            using (RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PublicKey.Key)
-            {
-                bytesEncrypted = csp.Encrypt(bytesData, false);
-                encyrptedString = Convert.ToBase64String(bytesEncrypted);
-            }
-
-            // decrypting the text using private key
-            string decryptedString = string.Empty;
-            using (RSACryptoServiceProvider csp = (RSACryptoServiceProvider)cert.PrivateKey)
-            {
-                byte[] bytesDecrypted = csp.Decrypt(bytesEncrypted, false);
-                decryptedString = Encoding.UTF8.GetString(bytesDecrypted);
-            }
+            File.WriteAllText(Path.Combine(logsFolder, randomFileName.ToString()), "current time:" + DateTime.Now);
         }
 
         //the method that will be provided to the KeyVaultClient
