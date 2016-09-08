@@ -31,6 +31,7 @@ namespace KeyVaultPlugin
 
             AssertNull(organizationService, "organizationService");
 
+
             // just create some dummy files and save on disk
             string logsFolder = Environment.ExpandEnvironmentVariables(@"%HOME%\LogFiles");
             Guid randomFileName = Guid.NewGuid();
